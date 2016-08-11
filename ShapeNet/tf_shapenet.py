@@ -1,9 +1,8 @@
-# ShapeNette
+# ShapeNet
 
 import numpy as np
 import tensorflow as tf 
 import scipy.misc
-import time
 import os 
 
 # TODO: fix dropout
@@ -16,11 +15,11 @@ def conv_layer(x, hidden_featl, k_sizes, dropout_frac):
 		w = tf.get_variable('weights_%d' % (i+1),
 			                shape=[k,k,n_in,n_out],
 		                	initializer=tf.contrib.layers.xavier_initializer())
-		                    #initializer=tf.random_normal_initializer(mean=1e-8,stddev=1e-8))
+					#initializer=tf.random_normal_initializer(mean=0.0,stddev=1e-12))
 							#initializer=tf.constant_initializer(0.0))
 		b = tf.get_variable('biases_%d' % (i+1),
 			                shape=[n_out],
-			                initializer=tf.constant_initializer(0.0))  # small positive bias for ReLU
+			                initializer=tf.constant_initializer(1.0))  # small positive bias for ReLU
 		c = tf.nn.conv2d(x,w,strides=[1,k,k,1],padding='VALID')
 		x = tf.nn.relu(c + b)
 	#return tf.nn.dropout(x, dropout_frac)
@@ -49,14 +48,16 @@ def softmax_ce_across_image(logits, labels):
 	p = tf.exp(logits)
 	sftmx = tf.div(p, tf.reduce_sum(p, reduction_indices=[3], keep_dims=True))
 	losses = -tf.reduce_sum(labels * tf.log(sftmx), reduction_indices=[3], keep_dims=False)
-	return tf.reduce_mean(losses, reduction_indices=[0,1,2])
+	return tf.reduce_mean(losses, reduction_indices=[0,1,2]), sftmx
 
 def shapenet(data, labels, in_feats, out_feats, n):
 	a_out = conv_deconv_layer(data, in_feats, out_feats, 0, n)
-	return a_out, softmax_ce_across_image(a_out, labels)
+	ls, sftmx = softmax_ce_across_image(a_out, labels)
+	return a_out, ls, sftmx
 
-#base_dir = '/data/ShapeNet'
-base_dir = '/media/PQI/ShapeNet'
+base_dir = os.path.dirname(os.path.abspath(__file__))
+
+print base_dir
 
 # Load training data
 d = np.load(os.path.join(base_dir,'shapenet.npz'), mmap_mode='r')
@@ -96,9 +97,8 @@ assert out_feats[0]==labels_train.shape[3]
 data   = tf.placeholder(shape=[None,n,n, in_feats[0]],dtype=tf.float32)
 labels = tf.placeholder(shape=[None,n,n,out_feats[0]],dtype=tf.float32)
 
-noisy_data = tf.add(tf.mul(data - tf.constant(0.5),tf.constant(0.8)), tf.random_normal(shape=tf.shape(data),stddev=0.2))
-out_imgs, loss = shapenet(noisy_data, labels, in_feats, out_feats, n)
-#test1 = conv_layer(x, hidden_featl, k_sizes, dropout_frac)
+noisy_data = tf.add(tf.mul(data - tf.constant(0.5),tf.constant(0.3)), tf.random_normal(shape=tf.shape(data),stddev=0.2))
+out_imgs, loss, sftmx = shapenet(noisy_data, labels, in_feats, out_feats, n)
 
 #shapenet_tmpl = tf.make_template('Shapenet', shapenet)
 #train_loss = shapenet_tmpl(data_train, labels_train, in_feats, out_feats, n)
@@ -109,35 +109,35 @@ out_imgs, loss = shapenet(noisy_data, labels, in_feats, out_feats, n)
 
 saver = tf.train.Saver()
 
-lr = 1e-6
+lr = 1e-4
 optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
 print 'Setting learning rate: ', lr
 #optimizer = tf.train.MomentumOptimizer(learning_rate=0.0,momentum=0.0).minimize(loss)
 
 with tf.Session() as sess:
 	sess.run(tf.initialize_all_variables())
-	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-7500'))
+	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-200'))
 	#print 'State restored.'
-	for epoch in range(7500,1000000):
+	for epoch in range(0,1000000):
 		# Run optimizer
 		_ = sess.run(optimizer, feed_dict={data:data_train, labels:labels_train})
 		#print 'Training loss: ', c
 		# Print loss on testing set
-		if epoch % 20 == 0:
+		if epoch % 200 == 0:
 			trn_loss = sess.run(loss, feed_dict={data:data_train, labels:labels_train})
 			tst_loss = sess.run(loss, feed_dict={data:data_test, labels:labels_test})
 			print 'Training and testing loss: ', trn_loss, ' ', tst_loss
 		# save output images
-		if epoch % 50 == 0:
-			ns, im = sess.run([noisy_data, out_imgs], feed_dict={data:data_test, labels:labels_test})
+		if epoch % 1000 == 0:
+			ns, im, sm = sess.run([noisy_data, out_imgs, sftmx], feed_dict={data:data_test, labels:labels_test})
 			#print im.shape
 			if epoch==0:
 				scipy.misc.imsave(os.path.join(base_dir,'img/in1_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[0,:,:,0], 0.0, 1.0))
 				scipy.misc.imsave(os.path.join(base_dir,'img/in2_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[4,:,:,0], 0.0, 1.0))
-			scipy.misc.imsave(os.path.join(base_dir,'img/pred1_%d.png' % epoch), (im[0,:,:,0] < im[0,:,:,1]).astype('float32'))
-			scipy.misc.imsave(os.path.join(base_dir,'img/pred2_%d.png' % epoch), (im[4,:,:,0] < im[4,:,:,1]).astype('float32'))
+			scipy.misc.imsave(os.path.join(base_dir,'img/pred1_%d.png' % epoch), sm[0,:,:,0])
+			scipy.misc.imsave(os.path.join(base_dir,'img/pred2_%d.png' % epoch), sm[4,:,:,0])
 		# Print loss on training set
-		if epoch % 100 == 0:
+		if epoch % 1000 == 0:
 			saver.save(sess, os.path.join(base_dir,'model/tf_shapenet_trained'),global_step=epoch)
 
 	#arr = np.random.randn(batch_size, n, n, 1)
