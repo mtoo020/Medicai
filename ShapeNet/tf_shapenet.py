@@ -1,9 +1,9 @@
 # ShapeNet
 
 import numpy as np
-import tensorflow as tf 
+import tensorflow as tf
 import scipy.misc
-import os 
+import os
 
 # TODO: fix dropout
 
@@ -60,13 +60,15 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 print base_dir
 
 # Load training data
-d = np.load(os.path.join(base_dir,'shapenet.npz'), mmap_mode='r')
+#d = np.load(os.path.join(base_dir,'shapenet.npz'), mmap_mode='r')
+#d = np.load(os.path.join(base_dir,'cells.npz'), mmap_mode='r')   # Breast
+d = np.load(os.path.join(base_dir,'SIM.npz'), mmap_mode='r')
 data_train   = d['data_train']
 data_test    = d['data_test']
 labels_train = d['labels_train']
 labels_test  = d['labels_test']
-in_feats     = d['in_feats']  
-out_feats    = d['out_feats'] 
+in_feats     = d['in_feats']
+out_feats    = d['out_feats']
 
 # -------------------------------------------------------
 # Data sanity checks
@@ -81,10 +83,8 @@ assert labels_train.shape[1] == n
 assert labels_test.shape[1]  == labels_test.shape[2]
 assert labels_test.shape[1]  == n
 # Make sure training data and labels have same batch size
-train_batch_size = data_train.shape[0]
-assert train_batch_size == labels_train.shape[0]
-test_batch_size  = data_test.shape[0]
-assert test_batch_size == labels_test.shape[0]
+assert data_train.shape[0] == labels_train.shape[0]
+assert data_test.shape[0] == labels_test.shape[0]
 # Make sure that number of input and output features match
 assert data_test.shape[3]   == data_train.shape[3]
 assert labels_test.shape[3] == labels_train.shape[3]
@@ -93,13 +93,15 @@ assert in_feats[0] ==  data_train.shape[3]
 assert out_feats[0]==labels_train.shape[3]
 # -------------------------------------------------------
 
+batch_size = 10
 
 data   = tf.placeholder(shape=[None,n,n, in_feats[0]],dtype=tf.float32)
 labels = tf.placeholder(shape=[None,n,n,out_feats[0]],dtype=tf.float32)
 
-noisy_data = tf.add(tf.mul(data - tf.constant(0.5),tf.constant(0.3)), tf.random_normal(shape=tf.shape(data),stddev=0.2))
-out_imgs, loss, sftmx = shapenet(noisy_data, labels, in_feats, out_feats, n)
-
+#noisy_data = tf.mul(tf.add(data - tf.constant(0.5), tf.random_normal(shape=tf.shape(data),stddev=0.5)), tf.constant(0.3))
+#out_imgs, loss, sftmx = shapenet(noisy_data, labels, in_feats, out_feats, n)
+out_imgs, loss, sftmx = shapenet(data, labels, in_feats, out_feats, n)
+tf.scalar_summary('loss', loss)
 #shapenet_tmpl = tf.make_template('Shapenet', shapenet)
 #train_loss = shapenet_tmpl(data_train, labels_train, in_feats, out_feats, n)
 #test_loss  = shapenet_tmpl(data_test,  labels_test,  in_feats, out_feats, n)
@@ -109,31 +111,38 @@ out_imgs, loss, sftmx = shapenet(noisy_data, labels, in_feats, out_feats, n)
 
 saver = tf.train.Saver()
 
-lr = 1e-4
+#lr = 1e-8  # Breast
+lr = 1e-6
 optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
 print 'Setting learning rate: ', lr
 #optimizer = tf.train.MomentumOptimizer(learning_rate=0.0,momentum=0.0).minimize(loss)
 
+merged = tf.merge_all_summaries()
+test_writer = tf.train.SummaryWriter('/home/bashir/ImageSeg/Medicai/ShapeNet/test')
+
 with tf.Session() as sess:
 	sess.run(tf.initialize_all_variables())
-	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-200'))
+	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-40000'))
 	#print 'State restored.'
 	for epoch in range(0,1000000):
 		# Run optimizer
-		_ = sess.run(optimizer, feed_dict={data:data_train, labels:labels_train})
+		data_train.shape[0]
+		batch = np.random.randint(0,data_train.shape[0],batch_size)
+		_ = sess.run(optimizer, feed_dict={data:data_train[batch,:,:,:], labels:labels_train[batch,:,:,:]})
 		#print 'Training loss: ', c
 		# Print loss on testing set
 		if epoch % 200 == 0:
 			trn_loss = sess.run(loss, feed_dict={data:data_train, labels:labels_train})
-			tst_loss = sess.run(loss, feed_dict={data:data_test, labels:labels_test})
+			summary, tst_loss = sess.run([merged, loss], feed_dict={data:data_test, labels:labels_test})
+			test_writer.add_summary(summary, epoch)
 			print 'Training and testing loss: ', trn_loss, ' ', tst_loss
 		# save output images
 		if epoch % 1000 == 0:
-			ns, im, sm = sess.run([noisy_data, out_imgs, sftmx], feed_dict={data:data_test, labels:labels_test})
+			im, sm = sess.run([out_imgs, sftmx], feed_dict={data:data_test, labels:labels_test})
 			#print im.shape
-			if epoch==0:
-				scipy.misc.imsave(os.path.join(base_dir,'img/in1_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[0,:,:,0], 0.0, 1.0))
-				scipy.misc.imsave(os.path.join(base_dir,'img/in2_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[4,:,:,0], 0.0, 1.0))
+			#if epoch==0:
+			#	scipy.misc.imsave(os.path.join(base_dir,'img/in1_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[0,:,:,0], 0.0, 1.0))
+			#	scipy.misc.imsave(os.path.join(base_dir,'img/in2_%d.png' % epoch),   np.clip(0.5 + 0.2*ns[4,:,:,0], 0.0, 1.0))
 			scipy.misc.imsave(os.path.join(base_dir,'img/pred1_%d.png' % epoch), sm[0,:,:,0])
 			scipy.misc.imsave(os.path.join(base_dir,'img/pred2_%d.png' % epoch), sm[4,:,:,0])
 		# Print loss on training set
