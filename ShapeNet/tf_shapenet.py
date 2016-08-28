@@ -20,7 +20,7 @@ def conv_layer(x, hidden_featl, k_sizes, dropout_frac):
 		b = tf.get_variable('biases_%d' % (i+1),
 			                shape=[n_out],
 			                initializer=tf.constant_initializer(1.0))  # small positive bias for ReLU
-		c = tf.nn.conv2d(x,w,strides=[1,k,k,1],padding='VALID')
+		c = tf.nn.conv2d(x,w,strides=[1,k,k,1],padding='SAME')
 		x = tf.nn.relu(c + b)
 	#return tf.nn.dropout(x, dropout_frac)
 	return x
@@ -112,7 +112,7 @@ tf.scalar_summary('loss', loss)
 saver = tf.train.Saver()
 
 #lr = 1e-8  # Breast
-lr = 1e-6
+lr = 1e-4
 optimizer = tf.train.AdamOptimizer(learning_rate=lr).minimize(loss)
 print 'Setting learning rate: ', lr
 #optimizer = tf.train.MomentumOptimizer(learning_rate=0.0,momentum=0.0).minimize(loss)
@@ -122,9 +122,9 @@ test_writer = tf.train.SummaryWriter('/home/bashir/ImageSeg/Medicai/ShapeNet/tes
 
 with tf.Session() as sess:
 	sess.run(tf.initialize_all_variables())
-	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-40000'))
+	#saver.restore(sess,os.path.join(base_dir,'model/tf_shapenet_trained-404000'))
 	#print 'State restored.'
-	for epoch in range(0,1000000):
+	for epoch in range(0,100000000):
 		# Run optimizer
 		data_train.shape[0]
 		batch = np.random.randint(0,data_train.shape[0],batch_size)

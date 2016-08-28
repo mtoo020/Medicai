@@ -1,7 +1,7 @@
 import numpy as np
 from skimage import io
-im_data   = io.imread('N2DH-SIM-data.tif')
-im_labels = io.imread('N2DH-SIM-labels.tif')
+im_data   = io.imread('N2DH-SIM-data256.tif')
+im_labels = io.imread('N2DH-SIM-labels256.tif')
 
 n_image = im_data.shape[0]
 w       = im_data.shape[1]
@@ -34,8 +34,8 @@ cls_test = np.greater(labl_test, 0.5).astype('float32')
 labels_test = np.concatenate((cls_test,1.0-cls_test),axis=3)
 
 # input size: 512x512
-in_feats     = [1,4,8,16,64]
-out_feats    = [2,4,8,16,64]
+in_feats     = [1,4,8,16,32,64,128,256]
+out_feats    = [2,4,8,16,32,64,128,256]
 
 
 np.savez('SIM.npz',
