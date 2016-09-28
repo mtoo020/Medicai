@@ -18,7 +18,7 @@ from tensorflow.python.framework import ops
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-img1 = skimage.io.imread("./test_data/testB_3.bmp")
+img1 = skimage.io.imread("./test_data/image_0000.jpg")
 
 with tf.Session() as sess:
 	

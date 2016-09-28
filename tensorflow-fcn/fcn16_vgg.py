@@ -11,7 +11,7 @@ import numpy as np
 import tensorflow as tf
 
 VGG_MEAN = [103.939, 116.779, 123.68]
-
+COLORECTAL_MEAN = [199.0, 131.0, 200.0]
 
 class FCN16VGG:
     def __init__(self, vgg16_npy_path=None):
@@ -20,7 +20,7 @@ class FCN16VGG:
             # print path
             path = os.path.abspath(os.path.join(path, os.pardir))
             # print path
-            path = os.path.join(path, "vgg16.npy")
+            path = os.path.join(path, "test-save.npy")
             vgg16_npy_path = path
             logging.info("Load npy file from '%s'.", vgg16_npy_path)
         if not os.path.isfile(vgg16_npy_path):
@@ -60,9 +60,9 @@ class FCN16VGG:
             # assert green.get_shape().as_list()[1:] == [224, 224, 1]
             # assert blue.get_shape().as_list()[1:] == [224, 224, 1]
             bgr = tf.concat(3, [
-                blue - VGG_MEAN[0],
-                green - VGG_MEAN[1],
-                red - VGG_MEAN[2],
+                blue  - COLORECTAL_MEAN[0],
+                green - COLORECTAL_MEAN[1],
+                red   - COLORECTAL_MEAN[2],
             ])
 
             if debug:
@@ -232,7 +232,7 @@ class FCN16VGG:
             num_input = ksize * ksize * in_features / stride
             stddev = (2 / num_input)**0.5
 
-            weights = self.get_deconv_filter(f_shape)
+            weights = self.get_deconv_filter(f_shape,stddev)
             deconv = tf.nn.conv2d_transpose(bottom, weights, output_shape,
                                             strides=strides, padding='SAME')
 
@@ -244,7 +244,7 @@ class FCN16VGG:
         _activation_summary(deconv)
         return deconv
 
-    def get_deconv_filter(self, f_shape):
+    def get_deconv_filter(self, f_shape, stddev):
         width = f_shape[0]
         heigh = f_shape[0]
         f = ceil(width/2.0)
@@ -255,7 +255,7 @@ class FCN16VGG:
                 value = (1 - abs(x / f - c)) * (1 - abs(y / f - c))
                 bilinear[x, y] = value
 	print(f_shape)
-        weights = np.zeros(f_shape)
+        weights = 0.001*stddev*np.random.randn(f_shape[0], f_shape[1], f_shape[2], f_shape[3])
         for i in range(f_shape[2]):
             weights[:, :, i, i] = bilinear
 
@@ -386,6 +386,7 @@ class FCN16VGG:
         print('Layer name: %s' % name)
         print('Layer shape: %s' % shape)
         weights = self.data_dict[name][0]
+        print(weights.shape)
         weights = weights.reshape(shape)
         #if num_classes is not None:
         #    weights = self._summary_reshape(weights, shape,

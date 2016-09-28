@@ -21,19 +21,25 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 from tensorflow.python.framework import ops
+img1 = skimage.io.imread("./test_data/image_0009.jpg")
+images = tf.placeholder("float")
+feed_dict = {images: img1}
+batch_images = tf.expand_dims(images,0)
+#os.environ['CUDA_VISIBLE_DEVICES'] = ''
+vgg_fcn = fcn16_vgg.FCN16VGG()
+with tf.name_scope("content_vgg"):
+    vgg_fcn.build(batch_images, debug=True)
 
-os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-img1 = skimage.io.imread("./test_data/tabby_cat.png")
 
+
+saver = tf.train.Saver()
 with tf.Session() as sess:
-    images = tf.placeholder("float")
-    feed_dict = {images: img1}
-    batch_images = tf.expand_dims(images, 0)
 
-    vgg_fcn = fcn16_vgg.FCN16VGG()
-    with tf.name_scope("content_vgg"):
-        vgg_fcn.build(batch_images, debug=True)
+    saver.restore(sess, "./train/fcn-1000")
+    #vgg_fcn = fcn8_vgg.FCN8VGG()
+    #with tf.name_scope("content_vgg"):
+        #vgg_fcn.build(batch_images, debug=True)
 
     print('Finished building Network.')
 
@@ -42,8 +48,8 @@ with tf.Session() as sess:
 
     logging.info("Start Initializing Variabels.")
 
-    init = tf.initialize_all_variables()
-    sess.run(tf.initialize_all_variables())
+    #init = tf.initialize_all_variables()
+    #sess.run(tf.initialize_all_variables())
 
     print('Running the Network')
     tensors = [vgg_fcn.pred, vgg_fcn.pred_up]

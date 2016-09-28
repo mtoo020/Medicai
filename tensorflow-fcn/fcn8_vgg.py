@@ -11,6 +11,7 @@ import numpy as np
 import tensorflow as tf
 
 VGG_MEAN = [106.,  120., 114.]
+COLORECTAL_MEAN = [200.0, 131.0, 199.0]
 
 
 class FCN8VGG:
@@ -60,9 +61,9 @@ class FCN8VGG:
             #assert green.get_shape().as_list()[1:] == [224, 224, 1]
             #assert blue.get_shape().as_list()[1:] == [224, 224, 1]
             bgr = tf.concat(3, [
-                blue - VGG_MEAN[0],
-                green - VGG_MEAN[1],
-                red - VGG_MEAN[2],
+                blue  - COLORECTAL_MEAN[0],
+                green - COLORECTAL_MEAN[1],
+                red   - COLORECTAL_MEAN[2],
             ])
 
             if debug:
@@ -238,9 +239,10 @@ class FCN8VGG:
 
             # create
             num_input = ksize * ksize * in_features / stride
+            print("num_input: ", num_input)
             stddev = (2 / num_input)**0.5
 
-            weights = self.get_deconv_filter(f_shape)
+            weights = self.get_deconv_filter(f_shape, stddev)
             deconv = tf.nn.conv2d_transpose(bottom, weights, output_shape,
                                             strides=strides, padding='SAME')
 
@@ -252,9 +254,9 @@ class FCN8VGG:
         _activation_summary(deconv)
         return deconv
 
-    def get_deconv_filter(self, f_shape):
+    def get_deconv_filter(self, f_shape, stddev):
         width = f_shape[0]
-        heigh = f_shape[0]
+        heigh = f_shape[1]
         f = ceil(width/2.0)
         c = (2 * f - 1 - f % 2) / (2.0 * f)
         bilinear = np.zeros([f_shape[0], f_shape[1]])
@@ -262,10 +264,10 @@ class FCN8VGG:
             for y in range(heigh):
                 value = (1 - abs(x / f - c)) * (1 - abs(y / f - c))
                 bilinear[x, y] = value
-        weights = np.zeros(f_shape)
+        #bilinear[f,f] = 1.0
+        weights = 0.001*stddev*np.random.randn(f_shape[0], f_shape[1], f_shape[2], f_shape[3])
         for i in range(f_shape[2]):
             weights[:, :, i, i] = bilinear
-
         init = tf.constant_initializer(value=weights,
                                        dtype=tf.float32)
         return tf.get_variable(name="up_filter", initializer=init,

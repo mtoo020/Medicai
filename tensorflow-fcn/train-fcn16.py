@@ -28,7 +28,7 @@ from reader import Reader
 from fcn16_vgg import FCN16VGG
 
 train_dir = './train'
-batch_size = 2
+batch_size = 7
 max_len = 260
 max_steps = 5000000
 test_steps = 100
@@ -64,7 +64,7 @@ def train():
         labels = feed_dict['labels']
 
         with tf.device('/gpu:0'):
-            logits = model.build(images)
+            logits = model.build(images, train=True)
             total_loss = model.loss(logits, labels)
             # total_loss = softmaxwithloss.loss(logits, labels, 2)
 
@@ -83,13 +83,15 @@ def train():
         #                             initializer = tf.constant_initializer(0), trainable = False)
         global_step = tf.Variable(0, trainable = False)
 
-        lr = tf.train.exponential_decay(1e-6,
+        lr = tf.train.exponential_decay(1e-12,
                             global_step,
                             1000,
                             0.95,
                             staircase = True)
+        mom = 0.99
 
-        opt = tf.train.GradientDescentOptimizer(lr)
+        opt = tf.train.MomentumOptimizer(lr,mom)
+
         grads_and_vars = opt.compute_gradients(total_loss)
         apply_gradient_op = opt.apply_gradients(grads_and_vars, global_step = global_step)
 
@@ -137,12 +139,6 @@ def train():
         tf.train.start_queue_runners(sess = sess)
 
 
-	img1 = skimage.io.imread("./test_data/testB_3.bmp")
-	images = tf.placeholder("float")
-	feed_dict = {images: img1}
-	
-	tensors = [model.pred, model.pred_up]
-	
 
         for step in range(max_steps):
             _, loss = sess.run([train_op, total_loss])
@@ -152,15 +148,7 @@ def train():
             if step != 0 and step % 100 == 0:
                 format_str = ('%s: step %d, loss = %.2f')
                 print(format_str % (datetime.now(), step, loss))
-		
-	    if step%500==0:
-		down, up = sess.run(tensors, feed_dict=feed_dict)
 
-		down_color = utils.color_image(down[0])
-		up_color = utils.color_image(up[0])
-
-		#scp.misc.imsave('./imgs/fcn16_downsampled'+str(step)+'.png', down_color)
-		scp.misc.imsave('./imgs/fcn16_upsampled'+str(step)+'.png', up_color)
 
             #if step != 0 and step % 200 == 0:
             #    summary_str = sess.run(summary_op)
@@ -176,7 +164,7 @@ def train():
             # Save the model checkpoint periodically.
             if (step != 0 and step % 1000 == 0) :
                 path = os.path.join(train_dir, 'fcn')
-                saver.save(sess, path, global_step = step)
+                saver.save(sess, path, global_step = step, write_meta_graph=False)
 
 
 

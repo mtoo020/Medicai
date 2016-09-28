@@ -9,6 +9,13 @@
 """
 
 """
+import skimage
+import skimage.io
+import skimage.transform
+import utils
+import os
+import scipy as scp
+import scipy.misc
 import sys
 sys.path.append('..')
 import tensorflow as tf
@@ -21,7 +28,7 @@ from reader import Reader
 from fcn8_vgg import FCN8VGG
 
 train_dir = './train'
-batch_size = 20
+batch_size = 5
 max_len = 260
 max_steps = 5000000
 test_steps = 100
@@ -57,7 +64,7 @@ def train():
         labels = feed_dict['labels']
 
         with tf.device('/gpu:0'):
-            logits = model.build(images)
+            logits = model.build(images, train=True)
             total_loss = model.loss(logits, labels)
             # total_loss = softmaxwithloss.loss(logits, labels, 2)
 
@@ -76,10 +83,10 @@ def train():
         #                             initializer = tf.constant_initializer(0), trainable = False)
         global_step = tf.Variable(0, trainable = False)
 
-        lr = tf.train.exponential_decay(1e-6,
+        lr = tf.train.exponential_decay(1e-4,
                             global_step,
                             1000,
-                            0.92,
+                            0.95,
                             staircase = True)
 
         opt = tf.train.GradientDescentOptimizer(lr)
@@ -128,6 +135,8 @@ def train():
 
         # Start the queue runners.
         tf.train.start_queue_runners(sess = sess)
+
+        #img1 = skimage.io.imread("./test_data/testB_3.jpg")
 
         for step in range(max_steps):
             _, loss = sess.run([train_op, total_loss])

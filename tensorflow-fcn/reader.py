@@ -39,12 +39,14 @@ class Reader(object):
     def read_and_decode(self):
         image_name = tf.read_file(self.filename_queue[0])
         image = tf.image.decode_jpeg(image_name, channels = 3)
-        image = tf.image.resize_images(image, [320, 480])
+        #image = tf.image.resize_images(image, [320, 480])
+        image = tf.image.resize_images(image, [584, 866])
         image /= 255.
 
         label_name = tf.read_file(self.filename_queue[1])
         label = tf.image.decode_png(label_name, channels = 1)
-        label = tf.image.resize_images(label, [320, 480])
+        #label = tf.image.resize_images(label, [320, 480])
+        label = tf.image.resize_images(label, [584, 866])
         label = tf.to_int64(label > 0)
 
         return image, label
@@ -155,4 +157,3 @@ def main(argv = None):
 
 if __name__ == '__main__':
     tf.app.run()
-
