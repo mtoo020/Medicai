@@ -21,7 +21,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 from tensorflow.python.framework import ops
-img1 = skimage.io.imread("./test_data/image_0009.jpg")
+img1 = skimage.io.imread("./test_data/testB_3.jpg")
 images = tf.placeholder("float")
 feed_dict = {images: img1}
 batch_images = tf.expand_dims(images,0)
@@ -36,7 +36,7 @@ with tf.name_scope("content_vgg"):
 saver = tf.train.Saver()
 with tf.Session() as sess:
 
-    saver.restore(sess, "./train/fcn-1000")
+    saver.restore(sess, "./train_fcn16_36k/fcn-36000")
     #vgg_fcn = fcn8_vgg.FCN8VGG()
     #with tf.name_scope("content_vgg"):
         #vgg_fcn.build(batch_images, debug=True)

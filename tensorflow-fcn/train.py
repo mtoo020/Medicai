@@ -28,7 +28,7 @@ from reader import Reader
 from fcn8_vgg import FCN8VGG
 
 train_dir = './train'
-batch_size = 5
+batch_size = 8
 max_len = 260
 max_steps = 5000000
 test_steps = 100
@@ -83,13 +83,16 @@ def train():
         #                             initializer = tf.constant_initializer(0), trainable = False)
         global_step = tf.Variable(0, trainable = False)
 
-        lr = tf.train.exponential_decay(1e-4,
+        lr = tf.train.exponential_decay(1e-13,
                             global_step,
                             1000,
-                            0.95,
+                            0.98,
                             staircase = True)
 
-        opt = tf.train.GradientDescentOptimizer(lr)
+        mom = 0.99
+
+        opt = tf.train.MomentumOptimizer(lr,mom)
+
         grads_and_vars = opt.compute_gradients(total_loss)
         apply_gradient_op = opt.apply_gradients(grads_and_vars, global_step = global_step)
 
@@ -161,7 +164,7 @@ def train():
             # Save the model checkpoint periodically.
             if (step != 0 and step % 1000 == 0) :
                 path = os.path.join(train_dir, 'fcn')
-                saver.save(sess, path, global_step = step)
+                saver.save(sess, path, global_step = step, write_meta_graph=False)
 
 
 

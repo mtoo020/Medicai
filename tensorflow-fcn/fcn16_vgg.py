@@ -20,7 +20,7 @@ class FCN16VGG:
             # print path
             path = os.path.abspath(os.path.join(path, os.pardir))
             # print path
-            path = os.path.join(path, "test-save.npy")
+            path = os.path.join(path, "test-save-224.npy")
             vgg16_npy_path = path
             logging.info("Load npy file from '%s'.", vgg16_npy_path)
         if not os.path.isfile(vgg16_npy_path):

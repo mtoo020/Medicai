@@ -31,8 +31,8 @@ class Reader(object):
         images = []
         labels = []
         for line in open(path):
-            images.append(os.path.join(self.data_dir,'Cell_JPEGImages', line.strip() + '.jpg'))
-            labels.append(os.path.join(self.data_dir, 'Cell_SegmentationClass', line.strip() + '.png'))
+            images.append(os.path.join(self.data_dir,'Cell_JPEGImages-small', line.strip() + '.jpg'))
+            labels.append(os.path.join(self.data_dir, 'Cell_SegmentationClass-small', line.strip() + '.png'))
 
         return tf.pack(images), tf.pack(labels)
 
@@ -40,13 +40,13 @@ class Reader(object):
         image_name = tf.read_file(self.filename_queue[0])
         image = tf.image.decode_jpeg(image_name, channels = 3)
         #image = tf.image.resize_images(image, [320, 480])
-        image = tf.image.resize_images(image, [584, 866])
+        image = tf.image.resize_images(image, [522, 775])
         image /= 255.
 
         label_name = tf.read_file(self.filename_queue[1])
         label = tf.image.decode_png(label_name, channels = 1)
         #label = tf.image.resize_images(label, [320, 480])
-        label = tf.image.resize_images(label, [584, 866])
+        label = tf.image.resize_images(label, [522, 775])
         label = tf.to_int64(label > 0)
 
         return image, label
@@ -74,8 +74,8 @@ class Reader(object):
         return {'images' : images, 'labels' : labels}
 
     def next_train(self):
-        with tf.name_scope('train'):
-            train_data = os.path.join(self.data_dir,'ImageSets', 'Segmentation', 'Cell_train.txt')
+        with tf.name_scope('train'), tf.device('/cpu:0'):
+            train_data = os.path.join(self.data_dir,'ImageSets', 'Segmentation', 'Cell_small_train.txt')
             if not os.path.exists(train_data):
                 print('no train data')
                 exit(1)
@@ -100,7 +100,7 @@ class Reader(object):
 
     def next_test(self):
         with tf.name_scope('test'):
-            test_data = os.path.join(self.data_dir,'ImageSets', 'Segmentation', 'Cell_test.txt')
+            test_data = os.path.join(self.data_dir,'ImageSets', 'Segmentation', 'Cell_small_test.txt')
             if not os.path.exists(test_data):
                 print('no test data')
                 exit(1)

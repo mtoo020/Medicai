@@ -28,7 +28,7 @@ from reader import Reader
 from fcn16_vgg import FCN16VGG
 
 train_dir = './train'
-batch_size = 7
+batch_size = 11
 max_len = 260
 max_steps = 5000000
 test_steps = 100
@@ -37,8 +37,8 @@ restore_path = './train/'
 test_dir = './test'
 num_classes = 2
 
-reader = Reader('/home/bashir/VOC2012', batch_size = batch_size)
-model = FCN16VGG('./test-save.npy')
+reader = Reader('/media/bashir/10e69c97-5ae7-4ec6-890d-6ab57ba4f1bd/bashir/VOC2012', batch_size = batch_size)
+model = FCN16VGG('./test-save-224.npy')
 
 
 def evaluate():
@@ -162,7 +162,7 @@ def train():
             #     precision(cnt);
 
             # Save the model checkpoint periodically.
-            if (step != 0 and step % 1000 == 0) :
+            if (step % 1000 == 0) :
                 path = os.path.join(train_dir, 'fcn')
                 saver.save(sess, path, global_step = step, write_meta_graph=False)
 
