@@ -62,7 +62,8 @@ print base_dir
 # Load training data
 #d = np.load(os.path.join(base_dir,'shapenet.npz'), mmap_mode='r')
 #d = np.load(os.path.join(base_dir,'cells.npz'), mmap_mode='r')   # Breast
-d = np.load(os.path.join(base_dir,'SIM.npz'), mmap_mode='r')
+#d = np.load(os.path.join(base_dir,'SIM.npz'), mmap_mode='r')
+d = np.load(os.path.join(base_dir,'silhounette.npz'), mmap_mode='r')
 data_train   = d['data_train']
 data_test    = d['data_test']
 labels_train = d['labels_train']
