@@ -21,7 +21,7 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     stream=sys.stdout)
 
 from tensorflow.python.framework import ops
-img1 = skimage.io.imread("./test_data/testB_3.jpg")
+img1 = skimage.io.imread("./test_data/testB_5.bmp")
 images = tf.placeholder("float")
 feed_dict = {images: img1}
 batch_images = tf.expand_dims(images,0)
@@ -58,5 +58,5 @@ with tf.Session() as sess:
     down_color = utils.color_image(down[0])
     up_color = utils.color_image(up[0])
 
-    scp.misc.imsave('fcn16_downsampled.png', down_color)
-    scp.misc.imsave('fcn16_upsampled.png', up_color)
+    #scp.misc.imsave('./output/fcn16_downsampled.png', down_color)
+    scp.misc.imsave('./output/fcn16_upsampled.png', up_color)

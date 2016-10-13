@@ -1,14 +1,4 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
-# Copyright © 2016 qingze <qingze@localhost.localdomain>
-#
-# Distributed under terms of the MIT license.
 
-"""
-
-"""
 import skimage
 import skimage.io
 import skimage.transform

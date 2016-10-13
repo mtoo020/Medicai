@@ -28,7 +28,7 @@ from reader import Reader
 from fcn32_vgg import FCN32VGG
 
 train_dir = './train'
-batch_size = 2
+batch_size = 20
 max_len = 260
 max_steps = 5000000
 test_steps = 100
@@ -38,7 +38,7 @@ test_dir = './test'
 num_classes = 2
 
 reader = Reader('/home/bashir/VOC2012', batch_size = batch_size)
-model = FCN32VGG('./test-save.npy')
+model = FCN32VGG('./vgg16.npy')
 
 
 def evaluate():
@@ -83,13 +83,15 @@ def train():
         #                             initializer = tf.constant_initializer(0), trainable = False)
         global_step = tf.Variable(0, trainable = False)
 
-        lr = tf.train.exponential_decay(1e-6,
+        lr = tf.train.exponential_decay(1e-10,
                             global_step,
                             1000,
-                            0.95,
+                            0.99,
                             staircase = True)
+        mom = 0.99
 
-        opt = tf.train.GradientDescentOptimizer(lr)
+        opt = tf.train.MomentumOptimizer(lr,mom)
+
         grads_and_vars = opt.compute_gradients(total_loss)
         apply_gradient_op = opt.apply_gradients(grads_and_vars, global_step = global_step)
 
@@ -152,14 +154,7 @@ def train():
             if step != 0 and step % 100 == 0:
                 format_str = ('%s: step %d, loss = %.2f')
                 print(format_str % (datetime.now(), step, loss))
-		
-		down, up = sess.run(tensors, feed_dict=feed_dict)
 
-		down_color = utils.color_image(down[0])
-		up_color = utils.color_image(up[0])
-
-		scp.misc.imsave('./imgs/fcn16_downsampled'+str(step)+'.png', down_color)
-		scp.misc.imsave('./imgs/fcn32_upsampled'+str(step)+'.png', up_color)
 
             #if step != 0 and step % 200 == 0:
             #    summary_str = sess.run(summary_op)
@@ -173,9 +168,11 @@ def train():
             #     precision(cnt);
 
             # Save the model checkpoint periodically.
-            if (step != 0 and step % 1000 == 0) :
+            if (step % 1000 == 0) :
                 path = os.path.join(train_dir, 'fcn')
-                saver.save(sess, path, global_step = step)
+                saver.save(sess, path, global_step = step, write_meta_graph=False)
+
+
 
 
 
