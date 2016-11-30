@@ -26,8 +26,8 @@ def softmax(target, axis, name=None):
 
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
-#img1 = skimage.io.imread("./test_data/intestinalparasites-0001.jpg")
-img1 = skimage.io.imread("./test_data/plasmodium-2525.jpg")
+img1 = skimage.io.imread("./test_data/intestinalparasites-0001.jpg")
+#img1 = skimage.io.imread("./test_data/plasmodium-2502.jpg")
 
 with tf.Session() as sess:
 	
@@ -53,23 +53,20 @@ with tf.Session() as sess:
 	
 
 	up = sess.run(vgg_fcn.upscore, feed_dict=feed_dict)
+	#print up
 	
-	print up
 	
 	softm = sess.run(softmax(up, axis =3))
-	print softm
 	
-	print up.shape
  	
-	num = 2000
-	for i in xrange(20):
-		n = float(i)/num
-		up = softm[:,:,:,1]
-		filtered =  np.where(up>n,1,0)
-		#filtered =  np.argmax(np.where(softm>n,n,0),3)
-		up = filtered	
-		up_color = utils.color_image(up[0])
-		
-		scp.misc.imsave('malaria_small_'+str(n*100)+'_%.png', up_color)
+	
+	up = softm[:,:,:,1]
+	np.save("3d-intestinal.npy", up)
+	filtered =  np.where(up>0.5,1,0)
+	#filtered =  np.argmax(np.where(softm>n,n,0),3)
+	up = filtered	
+	up_color = utils.color_image(up[0])
+	
+	scp.misc.imsave('3d_test_intes_fcn32_upsampled.png', up_color)
 
 

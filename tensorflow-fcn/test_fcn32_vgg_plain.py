@@ -53,23 +53,19 @@ with tf.Session() as sess:
 	
 
 	up = sess.run(vgg_fcn.upscore, feed_dict=feed_dict)
-	
 	print up
 	
-	softm = sess.run(softmax(up, axis =3))
-	print softm
 	
-	print up.shape
+	softm = sess.run(softmax(up, axis =3))
+	
  	
-	num = 2000
-	for i in xrange(20):
-		n = float(i)/num
-		up = softm[:,:,:,1]
-		filtered =  np.where(up>n,1,0)
-		#filtered =  np.argmax(np.where(softm>n,n,0),3)
-		up = filtered	
-		up_color = utils.color_image(up[0])
-		
-		scp.misc.imsave('malaria_small_'+str(n*100)+'_%.png', up_color)
+	
+	up = softm[:,:,:,1]
+	filtered =  np.where(up>0.5,1,0)
+	#filtered =  np.argmax(np.where(softm>n,n,0),3)
+	up = filtered	
+	up_color = utils.color_image(up[0])
+	
+	scp.misc.imsave('test_intes_fcn32_upsampled.png', up_color)
 
 
